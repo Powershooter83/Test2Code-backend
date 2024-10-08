@@ -7,13 +7,15 @@ router = APIRouter()
 # Route to get languages
 @router.get("/languages")
 async def get_languages():
-    return ["Python"]
+    return ["Python", "Java"]
 
 # Route to get language versions
 @router.get("/languages/version/{lang}")
 async def get_language_versions(lang: str):
     if lang == "Python":
         return {"language": lang, "versions": ["3.11"]}
+    if lang == "Java":
+        return {"language": lang, "versions": ["11"]}
     return {"error": "Language not found"}, 404
 
 # Route to post test cases

@@ -24,3 +24,24 @@ syntaxError
 dependencyError
 noValidCode
 unknownError"""
+
+SYSTEM_PROMPT_REVISE = """
+
+**Task:** Modify the provided implementation to fix the error so that the unit tests pass. You will receive:
+- The **test case**
+- The **current (faulty) implementation**
+- The **error message**
+
+**Rules:**
+- You can only modify the implementation; the test case cannot be changed.
+- The implementation must strictly follow the test case requirements and respect any constraints or messaging patterns specified.
+- The code should not contain comments.
+
+**Verification Steps:**
+- Ensure that the test case is valid and does not depend on any external libraries, except for those in the Python standard library.
+- Do not format the input, and do not include any code validation beyond what's required by the test case.
+
+**Output Format:**
+- Return the **corrected implementation** and the **test case** as plain text, ensuring there is no use of markdown formatting, backticks or code blocks.
+- Make sure to format the code blocks apropriatly
+"""

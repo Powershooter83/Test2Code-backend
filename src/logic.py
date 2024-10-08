@@ -1,7 +1,7 @@
 from services.container_service import get_container_service
-import services.llm_service  # import generate_code if needed
+from backend.src.services.llm_service.llm_service import *
 from fastapi import APIRouter, Request
-import services.llm_service
+import backend.src.services.llm_service.llm_service
 
 
 
@@ -54,12 +54,12 @@ class CodeExecutionLogic:
                 },
                 "system_fingerprint": "fp_f85bea6784"}
 
-        pseudo_code = """
+        pseudo_code_mock = """
 def add(a, b):
     return a + b
 """
 
-        pseudo_test_code = """
+        pseudo_test_code_mock = """
 def test_add():
     assert add(1, 2) == 3
     assert add(-1, 1) == 0
@@ -79,9 +79,11 @@ def test_failing_2():
     assert add(4, 1) == 0
     assert add(0, 0) == -5
 """
+        generated_code = generate_implementation(testcases)
+
         try:
             service = get_container_service(lang)
-            result = service.run_code_in_container(pseudo_code, pseudo_test_code)
+            result = service.run_code_in_container(pseudo_code_mock, pseudo_test_code_mock)
             return result
 
         except ValueError as e:

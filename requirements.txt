@@ -3,3 +3,5 @@ uvicorn
 pytest
 docker
 openai
+pydantic
+python-dotenv

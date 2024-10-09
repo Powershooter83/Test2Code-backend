@@ -1,5 +1,5 @@
 from openai import OpenAI
-from src.services.llm_service.llm_prompt import SYSTEM_PROMPT_GENERATION, SYSTEM_PROMPT_REVISE
+from .llm_prompt import SYSTEM_PROMPT_GENERATION, SYSTEM_PROMPT_REVISE
 import json
 
 class CodeGenerator:

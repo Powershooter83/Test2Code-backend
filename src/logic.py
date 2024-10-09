@@ -1,7 +1,8 @@
+import os
+
 from services.container_service import get_container_service
 from services.llm_service.llm_service import CodeGenerator
-from fastapi import APIRouter, Request
-import os
+
 
 class CodeExecutionLogic:
     @staticmethod
@@ -61,12 +62,12 @@ class CodeExecutionLogic:
                 },
                 "system_fingerprint": "fp_f85bea6784"}
 
-        pseudo_code_mock = """
+        code_mock = """
 def add(a, b):
     return a + b
 """
 
-        pseudo_test_code_mock = """
+        test_code_mock = """
 def test_add():
     assert add(1, 2) == 3
     assert add(-1, 1) == 0
@@ -86,14 +87,13 @@ def test_failing_2():
     assert add(4, 1) == 0
     assert add(0, 0) == -5
 """
-        generated_code = generate_implementation(testcases)
 
         try:
-            openai_API_key = os.getenv("OPENAI_API_KEY")
+            openai_api_key = os.getenv("OPENAI_API_KEY")
 
-            codeGenerator = CodeGenerator(openai_API_key)
+            code_generator = CodeGenerator(openai_api_key)
 
-            generated_code = codeGenerator.generate_implementation(testcases)
+            generated_code = code_generator.generate_implementation(testcases)
             if generated_code["error"]["type"] != "noError":
                 return generated_code["error"]
             testcases, implementations = CodeExecutionLogic.parse_testcase_and_implementation(generated_code)

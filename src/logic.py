@@ -31,6 +31,13 @@ class CodeExecutionLogic:
 
     @staticmethod
     async def execute_testcases(testcases: str, lang: str, version: str, simulate: bool = False):
+
+        # check if lang and version are supported
+        if lang not in CodeExecutionLogic.get_supported_languages():
+            return {"error": "Language not supported"}
+        if version not in CodeExecutionLogic.get_language_versions(lang)["versions"]:
+            return {"error": "Version not supported"}
+
         if simulate:
             return {
                 "id": "chatcmpl-AFohtniAprarbO6GWW57oPoQSZMQ9",

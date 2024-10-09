@@ -1,9 +1,7 @@
 from services.container_service import get_container_service
-from backend.src.services.llm_service.llm_service import *
+from services.llm_service.llm_service import CodeGenerator
 from fastapi import APIRouter, Request
-import backend.src.services.llm_service.llm_service
-
-
+import os
 
 class CodeExecutionLogic:
     @staticmethod
@@ -20,6 +18,15 @@ class CodeExecutionLogic:
         # if lang == "Java":
         #     return {"language": lang, "versions": ["11"]}
         return {"error": "Language not found"}
+
+    @staticmethod
+    def parse_testcase_and_implementation(jsonObject: object):
+        testcases = ''
+        implementations = ''
+        for key in jsonObject["test2code"]:
+            testcases += key["testcase"] + "\n"
+            implementations += key["implementation"] + "\n"
+        return testcases, implementations
 
     @staticmethod
     async def execute_testcases(testcases: str, lang: str, version: str, simulate: bool = False):
@@ -82,8 +89,16 @@ def test_failing_2():
         generated_code = generate_implementation(testcases)
 
         try:
+            openai_API_key = os.getenv("OPENAI_API_KEY")
+
+            codeGenerator = CodeGenerator(openai_API_key)
+
+            generated_code = codeGenerator.generate_implementation(testcases)
+            if generated_code["error"]["type"] != "noError":
+                return generated_code["error"]
+            testcases, implementations = CodeExecutionLogic.parse_testcase_and_implementation(generated_code)
             service = get_container_service(lang)
-            result = service.run_code_in_container(pseudo_code_mock, pseudo_test_code_mock)
+            result = service.run_code_in_container(implementations, testcases)
             return result
 
         except ValueError as e:

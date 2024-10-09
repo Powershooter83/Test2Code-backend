@@ -1,29 +1,49 @@
-SYSTEM_PROMPT_GENERATION = """Generate  methods that satisfy the provided unit tests, ensuring that the methods strictly adhere to the specified constraints and messaging patterns without including any comments. Follow these guidelines:
+SYSTEM_PROMPT_GENERATION = """Task: Generate methods that fulfill the provided unit tests, adhering strictly to the following rules
 
 Verification Steps:
-- Ensure the provided unit tests are valid code in the appropriate language.
-- Confirm that the unit tests do not rely on external dependencies or libraries beyond those included in the default language installation.
-
+    - Ensure the provided unit tests are valid code in the specified language.
+    - The unit tests must not depend on external libraries beyond default installations.
 Language-Specific Rules:
-- The unit tests must exclusively utilize modules available in the standard Python library.
-- The input should not be validated by formatting.
-
+    Python:
+        - Unit tests should only use standard Python libraries.
+        - Input should not be validated by formatting.
 Output Format:
-- Output the methods that fulfill the unit tests as plain text, without any enclosing backticks, code blocks, or markdown formatting and do the same for the input testcase and make sure the input testcase is also formatted and returned as output.
-- Ensure that the response does not contain any code block syntax.
-
+    - Return both the test case and method implementation as plain text but formatted (no code blocks or markdown).
+    - Output as a JSON structure like this JSON structure:
+        {
+        "test2code": [
+            {
+            "testcase": "Enter the full testcase, ensure **'test_' is prefixed** to the name and the testcase is **FORMATTED**.",
+            "implementation": "Enter the generated implementation"
+            }
+        ],
+        "error": {
+            "type": "errortype",
+            "message": "If error occurs, include a short and percise error description."
+        }
+        }
 Error Handling:
-- If any of the conditions are not met, return a message in the following JSON structure:
+    - errortype: Must be one of: syntaxError, dependencyError, noValidCode, unknownError, or noError.
+    - Append test cases sharing the same implementation to a single "test2code" object.
 
-{
-    "type": "errortype",
-    "message": "short precise error description"
-}
-The errortype must be one of the following:
-syntaxError
-dependencyError
-noValidCode
-unknownError"""
+Example Output
+    {
+    "test2code": [
+        {
+        "testcase": "def test_add_numbers(self):\n    self.assertEqual(add_numbers(3, 3), 6) \n\n def test_add_numbers2(self):\n    self.assertEqual(add_numbers(2, 3), 5)",
+        "implementation": "def add_numbers(a, b):\n    return a + b"
+        },
+        {
+        "testcase": "def test_subtract_numbers(self):\n    self.assertEqual(sub_numbers(2, 3), -1)",
+        "implementation": "def sub_numbers(a, b):\n    return a - b"
+        }
+    ],
+    "error": {
+        "type": "noError",
+        "message": ""
+    }
+    }
+"""
 
 SYSTEM_PROMPT_REVISE = """
 

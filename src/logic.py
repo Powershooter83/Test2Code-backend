@@ -64,6 +64,20 @@ def test_add():
     assert add(1, 2) == 3
     assert add(-1, 1) == 0
     assert add(0, 0) == 0
+    
+def test_failing():
+    assert add(1, 2) == 3
+    assert add(2, 1) == 0
+    assert add(5, 0) == 0
+
+def test_add_2():
+    assert add(1, 2) == 3
+    assert add(-1, 1) == 0
+    assert add(0, 0) == 0
+def test_failing_2():
+    assert add(1, 2) == 3
+    assert add(4, 1) == 0
+    assert add(0, 0) == -5
 """
         try:
             service = get_container_service(lang)

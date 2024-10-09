@@ -1,8 +1,7 @@
-from services.container_service import get_container_service
-import services.llm_service  # import generate_code if needed
-from fastapi import APIRouter, Request
-import services.llm_service
+import os
 
+from services.container_service import get_container_service
+from services.llm_service.llm_service import CodeGenerator
 
 
 class CodeExecutionLogic:
@@ -22,7 +21,23 @@ class CodeExecutionLogic:
         return {"error": "Language not found"}
 
     @staticmethod
+    def parse_testcase_and_implementation(jsonObject: object):
+        testcases = ''
+        implementations = ''
+        for key in jsonObject["test2code"]:
+            testcases += key["testcase"] + "\n"
+            implementations += key["implementation"] + "\n"
+        return testcases, implementations
+
+    @staticmethod
     async def execute_testcases(testcases: str, lang: str, version: str, simulate: bool = False):
+
+        # check if lang and version are supported
+        if lang not in CodeExecutionLogic.get_supported_languages():
+            return {"error": "Language not supported"}
+        if version not in CodeExecutionLogic.get_language_versions(lang)["versions"]:
+            return {"error": "Version not supported"}
+
         if simulate:
             return {
                 "id": "chatcmpl-AFohtniAprarbO6GWW57oPoQSZMQ9",
@@ -54,12 +69,12 @@ class CodeExecutionLogic:
                 },
                 "system_fingerprint": "fp_f85bea6784"}
 
-        pseudo_code = """
+        code_mock = """
 def add(a, b):
     return a + b
 """
 
-        pseudo_test_code = """
+        test_code_mock = """
 def test_add():
     assert add(1, 2) == 3
     assert add(-1, 1) == 0
@@ -79,10 +94,22 @@ def test_failing_2():
     assert add(4, 1) == 0
     assert add(0, 0) == -5
 """
+
         try:
+            openai_api_key = os.getenv("OPENAI_API_KEY")
+
+            code_generator = CodeGenerator(openai_api_key)
+
+            llm_response_obj = code_generator.generate_implementation(testcases)
+            if llm_response_obj["error"]["type"] != "noError":
+                return llm_response_obj["error"]
+            testcases, implementations = CodeExecutionLogic.parse_testcase_and_implementation(llm_response_obj)
             service = get_container_service(lang)
-            result = service.run_code_in_container(pseudo_code, pseudo_test_code)
-            return result
+            result = service.run_code_in_container(implementations, testcases)
+            if result.get("test_results").get("passed") == result.get("test_results").get("total"):
+                return implementations
+            else:
+                return result
 
         except ValueError as e:
             return {"error": str(e)}

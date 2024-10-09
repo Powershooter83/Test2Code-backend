@@ -9,15 +9,12 @@ class CodeExecutionLogic:
     def get_supported_languages():
         return [
             "Python",
-            # "Java",
         ]
 
     @staticmethod
     def get_language_versions(lang: str):
         if lang == "Python":
             return {"language": lang, "versions": ["3.11"]}
-        # if lang == "Java":
-        #     return {"language": lang, "versions": ["11"]}
         return {"error": "Language not found"}
 
     @staticmethod
@@ -30,70 +27,32 @@ class CodeExecutionLogic:
         return testcases, implementations
 
     @staticmethod
-    async def execute_testcases(testcases: str, lang: str, version: str, simulate: bool = False):
+    def handel_docker_response(docker_response: dict):
+        failed_tests = []
+        passed_tests = []
+        tests = docker_response["test_results"]["tests"]
+        for test in tests:
+            test_info = {
+                "name": test.split("::")[-1],
+                "errorType": None,
+                "errorMessage": None,
+            }
+            if test["outcome"] == "passed":
+                passed_tests.append(test_info)
+            elif test["outcome"] == "failed":
+                test_info["errorType"] = test["call"]["traceback"]["message"]
+                test_info["errorMessage"] = test["call"]["crash"]["message"]
+                failed_tests.append(test_info)
+        return failed_tests, passed_tests
+
+    @staticmethod
+    async def execute_testcases(testcases: str, lang: str, version: str):
 
         # check if lang and version are supported
         if lang not in CodeExecutionLogic.get_supported_languages():
             return {"error": "Language not supported"}
         if version not in CodeExecutionLogic.get_language_versions(lang)["versions"]:
             return {"error": "Version not supported"}
-
-        if simulate:
-            return {
-                "id": "chatcmpl-AFohtniAprarbO6GWW57oPoQSZMQ9",
-                "object": "chat.completion",
-                "created": 1728333201,
-                "model": "gpt-4o-mini-2024-07-18",
-                "choices": [
-                    {
-                        "index": 0,
-                        "message": {
-                            "role": "assistant",
-                            "content": "This is a test! How can I assist you further?",
-                            "refusal": "null"
-                        },
-                        "logprobs": "null",
-                        "finish_reason": "stop"
-                    }
-                ],
-                "usage": {
-                    "prompt_tokens": 13,
-                    "completion_tokens": 12,
-                    "total_tokens": 25,
-                    "prompt_tokens_details": {
-                        "cached_tokens": 0
-                    },
-                    "completion_tokens_details": {
-                        "reasoning_tokens": 0
-                    }
-                },
-                "system_fingerprint": "fp_f85bea6784"}
-
-        code_mock = """
-def add(a, b):
-    return a + b
-"""
-
-        test_code_mock = """
-def test_add():
-    assert add(1, 2) == 3
-    assert add(-1, 1) == 0
-    assert add(0, 0) == 0
-    
-def test_failing():
-    assert add(1, 2) == 3
-    assert add(2, 1) == 0
-    assert add(5, 0) == 0
-
-def test_add_2():
-    assert add(1, 2) == 3
-    assert add(-1, 1) == 0
-    assert add(0, 0) == 0
-def test_failing_2():
-    assert add(1, 2) == 3
-    assert add(4, 1) == 0
-    assert add(0, 0) == -5
-"""
 
         try:
             openai_api_key = os.getenv("OPENAI_API_KEY")
@@ -103,9 +62,14 @@ def test_failing_2():
             llm_response_obj = code_generator.generate_implementation(testcases)
             if llm_response_obj["error"]["type"] != "noError":
                 return llm_response_obj["error"]
+
             testcases, implementations = CodeExecutionLogic.parse_testcase_and_implementation(llm_response_obj)
             service = get_container_service(lang)
+
             result = service.run_code_in_container(implementations, testcases)
+
+            foo = CodeExecutionLogic.handel_docker_response(result)
+
             if result.get("test_results").get("passed") == result.get("test_results").get("total"):
                 return implementations
             else:

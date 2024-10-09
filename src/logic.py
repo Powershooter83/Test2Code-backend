@@ -93,13 +93,16 @@ def test_failing_2():
 
             code_generator = CodeGenerator(openai_api_key)
 
-            generated_code = code_generator.generate_implementation(testcases)
-            if generated_code["error"]["type"] != "noError":
-                return generated_code["error"]
-            testcases, implementations = CodeExecutionLogic.parse_testcase_and_implementation(generated_code)
+            llm_response_obj = code_generator.generate_implementation(testcases)
+            if llm_response_obj["error"]["type"] != "noError":
+                return llm_response_obj["error"]
+            testcases, implementations = CodeExecutionLogic.parse_testcase_and_implementation(llm_response_obj)
             service = get_container_service(lang)
             result = service.run_code_in_container(implementations, testcases)
-            return result
+            if result.get("test_results").get("passed") == result.get("test_results").get("total"):
+                return implementations
+            else:
+                return result
 
         except ValueError as e:
             return {"error": str(e)}

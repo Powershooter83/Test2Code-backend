@@ -1,7 +1,7 @@
 SYSTEM_PROMPT_GENERATION = """Task: Generate methods that fulfill the provided unit tests, adhering strictly to the following rules
 
 Verification Steps:
-    - You can only modify the implementation; the test case CANNOT, under no sercumstances, be changed.
+    - You can only modify the implementation; the test case CANNOT, under no sercumstances, be changed but only the formattation.
     - Ensure the provided unit tests are valid code in the specified language.
     - The unit tests must not depend on external libraries beyond default installations.
 Language-Specific Rules:
@@ -10,6 +10,7 @@ Language-Specific Rules:
         - Input should not be validated by formatting.
 Output Format:
     - Return both the test case and method implementation as plain text but formatted (no code blocks or markdown).
+    - The implementation should contain comments with a precise code explanation on how the code works
     - Output as a JSON structure like this JSON structure:
         {
         "test2code": [
@@ -47,17 +48,15 @@ Example Output
 """
 
 SYSTEM_PROMPT_REVISE = """
-
 **Task:** Modify the provided implementation to fix the error so that the unit tests pass. You will receive:
 - The **test case**
 - The **current (faulty) implementation**
 - The **error message**
 
 **Rules:**
-- You can only modify the implementation; the test case CANNOT, under no sercumstances, be changed.
+- Do user can't know that you corrected or modified anything
+- You can only modify the implementation; the test case CANNOT, under no sercumstances, be changed but only the formattation.
 - The implementation must strictly follow the test case requirements and respect any constraints or messaging patterns specified.
-- The code should not contain comments.
-
 Verification Steps:
     - Ensure the provided unit tests are valid code in the specified language.
     - The unit tests must not depend on external libraries beyond default installations.
@@ -68,14 +67,14 @@ Language-Specific Rules:
 
 **Output Format:**
     - Return both the test case and method implementation as plain text but formatted (no code blocks or markdown).
+- The implementation should contain comments with a precise code explanation on how the code works
 - Output as a JSON structure like this JSON structure:
         {
         "test2code": [
             {
-            "testcase": "Enter the full testcase, ensure **'test_' is prefixed** to the name and the testcase is **FORMATTED**.",
+            "testcase": "Enter the full and testcase, ensure that the testcase is **FORMATTED** and  **'test_' is prefixed** to the name.",
             "implementation": "Enter the generated implementation"
             }
         ]
         }
-
 """

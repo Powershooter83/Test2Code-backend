@@ -60,8 +60,20 @@ class CodeExecutionLogic:
             code_generator = CodeGenerator(openai_api_key)
 
             llm_response_obj = code_generator.generate_implementation(testcases)
-            if llm_response_obj["error"]["type"] != "noError":
-                return llm_response_obj["error"]
+
+            testcases, implementations = CodeExecutionLogic.parse_testcase_and_implementation(llm_response_obj)
+
+            if llm_response_obj["error"]["type"] != "":
+                if llm_response_obj["error"]["source"] == "implementation":
+
+                    for tries in range(3):
+                        llm_response_obj = code_generator.revise_implementation(testcases,
+                                                                        implementations,
+                                                                        llm_response_obj["error"]["message"])
+                        if llm_response_obj["error"]["type"] == "":
+                            break
+                if llm_response_obj["error"]["type"] != "":
+                    return llm_response_obj["error"]
 
             testcases, implementations = CodeExecutionLogic.parse_testcase_and_implementation(llm_response_obj)
             service = get_container_service(lang)

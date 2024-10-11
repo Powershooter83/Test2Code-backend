@@ -1,5 +1,7 @@
 import os
 
+from starlette.config import undefined
+
 from services.container_service import get_container_service
 from services.llm_service.llm_service import CodeGenerator
 
@@ -27,23 +29,18 @@ class CodeExecutionLogic:
         return testcases, implementations
 
     @staticmethod
-    def handel_docker_response(docker_response: dict):
-        failed_tests = []
-        passed_tests = []
-        tests = docker_response["test_results"]["tests"]
-        for test in tests:
-            test_info = {
-                "name": test.split("::")[-1],
-                "errorType": None,
-                "errorMessage": None,
-            }
-            if test["outcome"] == "passed":
-                passed_tests.append(test_info)
-            elif test["outcome"] == "failed":
-                test_info["errorType"] = test["call"]["traceback"]["message"]
-                test_info["errorMessage"] = test["call"]["crash"]["message"]
-                failed_tests.append(test_info)
-        return failed_tests, passed_tests
+    def retry_generating_implementation(llm_response_obj: object,
+                                        code_generator: CodeGenerator,
+                                        testcases: str,
+                                        implementations: str):
+        for tries in range(3):
+            llm_response_obj = code_generator.revise_implementation(testcases,
+                                                                    implementations,
+                                                                    llm_response_obj["error"]["message"])
+            if llm_response_obj["error"]["type"] == "":
+                return llm_response_obj
+
+        return llm_response_obj
 
     @staticmethod
     async def execute_testcases(testcases: str, lang: str, version: str):
@@ -65,26 +62,25 @@ class CodeExecutionLogic:
 
             if llm_response_obj["error"]["type"] != "":
                 if llm_response_obj["error"]["source"] == "implementation":
-
-                    for tries in range(3):
-                        llm_response_obj = code_generator.revise_implementation(testcases,
-                                                                        implementations,
-                                                                        llm_response_obj["error"]["message"])
-                        if llm_response_obj["error"]["type"] == "":
-                            break
-                if llm_response_obj["error"]["type"] != "":
-                    return llm_response_obj["error"]
+                    llm_response_obj = CodeExecutionLogic.retry_generating_implementation(llm_response_obj,
+                                                                                code_generator,
+                                                                                testcases,
+                                                                                implementations)
+                else:
+                    return llm_response_obj
 
             testcases, implementations = CodeExecutionLogic.parse_testcase_and_implementation(llm_response_obj)
             service = get_container_service(lang)
 
             result = service.run_code_in_container(implementations, testcases)
-            # foo = CodeExecutionLogic.handel_docker_response(result)
 
             if result.get("test_results").get("passed") == result.get("test_results").get("total"):
                 return llm_response_obj
             else:
-                return result
+                return CodeExecutionLogic.retry_generating_implementation(llm_response_obj,
+                                                                            code_generator,
+                                                                            testcases,
+                                                                            implementations)
 
         except ValueError as e:
             return {"error": str(e)}

@@ -1,6 +1,7 @@
 SYSTEM_PROMPT_GENERATION = """Task: Generate methods that fulfill the provided unit tests, adhering strictly to the following rules
 
 Verification Steps:
+    - You can only modify the implementation; the test case CANNOT, under no sercumstances, be changed.
     - Ensure the provided unit tests are valid code in the specified language.
     - The unit tests must not depend on external libraries beyond default installations.
 Language-Specific Rules:
@@ -23,7 +24,7 @@ Output Format:
         }
         }
 Error Handling:
-    - errortype: Must be one of: syntaxError, dependencyError, noValidCode, unknownError, or noError.
+    - errortype: Must be one of: logicError, syntaxError, dependencyError, noValidCode, unknownError, or noError.
     - Append test cases sharing the same implementation to a single "test2code" object.
 
 Example Output
@@ -53,15 +54,28 @@ SYSTEM_PROMPT_REVISE = """
 - The **error message**
 
 **Rules:**
-- You can only modify the implementation; the test case cannot be changed.
+- You can only modify the implementation; the test case CANNOT, under no sercumstances, be changed.
 - The implementation must strictly follow the test case requirements and respect any constraints or messaging patterns specified.
 - The code should not contain comments.
 
-**Verification Steps:**
-- Ensure that the test case is valid and does not depend on any external libraries, except for those in the Python standard library.
-- Do not format the input, and do not include any code validation beyond what's required by the test case.
+Verification Steps:
+    - Ensure the provided unit tests are valid code in the specified language.
+    - The unit tests must not depend on external libraries beyond default installations.
+Language-Specific Rules:
+    Python:
+        - Unit tests should only use standard Python libraries.
+        - Input should not be validated by formatting.
 
 **Output Format:**
-- Return the **corrected implementation** and the **test case** as plain text, ensuring there is no use of markdown formatting, backticks or code blocks.
-- Make sure to format the code blocks apropriatly
+    - Return both the test case and method implementation as plain text but formatted (no code blocks or markdown).
+- Output as a JSON structure like this JSON structure:
+        {
+        "test2code": [
+            {
+            "testcase": "Enter the full testcase, ensure **'test_' is prefixed** to the name and the testcase is **FORMATTED**.",
+            "implementation": "Enter the generated implementation"
+            }
+        ]
+        }
+
 """

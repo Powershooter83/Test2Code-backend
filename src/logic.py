@@ -8,7 +8,7 @@ class CodeExecutionLogic:
     @staticmethod
     def get_supported_languages():
         return [
-            "python",
+            "Python",
         ]
 
     @staticmethod

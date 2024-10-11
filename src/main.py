@@ -12,7 +12,10 @@ dotenv.load_dotenv()
 origins = [
     "http://localhost",
     "http://localhost:8080",
-    "http://localhost:4200"
+    "http://localhost:4200",
+    "http://65.109.96.234",
+    "https://65.109.96.234:443",
+    "http://65.109.96.234:80"
 ]
 
 app = FastAPI()

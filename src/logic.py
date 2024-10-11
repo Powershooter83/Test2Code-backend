@@ -67,11 +67,10 @@ class CodeExecutionLogic:
             service = get_container_service(lang)
 
             result = service.run_code_in_container(implementations, testcases)
-
             # foo = CodeExecutionLogic.handel_docker_response(result)
 
             if result.get("test_results").get("passed") == result.get("test_results").get("total"):
-                return implementations
+                return llm_response_obj
             else:
                 return result
 

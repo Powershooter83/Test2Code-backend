@@ -8,12 +8,12 @@ class CodeExecutionLogic:
     @staticmethod
     def get_supported_languages():
         return [
-            "Python",
+            "python",
         ]
 
     @staticmethod
     def get_language_versions(lang: str):
-        if lang == "Python":
+        if lang.lower() == "python":
             return {"language": lang, "versions": ["3.11"]}
         return {"error": "Language not found"}
 
@@ -49,7 +49,7 @@ class CodeExecutionLogic:
     async def execute_testcases(testcases: str, lang: str, version: str):
 
         # check if lang and version are supported
-        if lang not in CodeExecutionLogic.get_supported_languages():
+        if lang.lower() not in CodeExecutionLogic.get_supported_languages():
             return {"error": "Language not supported"}
         if version not in CodeExecutionLogic.get_language_versions(lang)["versions"]:
             return {"error": "Version not supported"}
@@ -68,7 +68,7 @@ class CodeExecutionLogic:
 
             result = service.run_code_in_container(implementations, testcases)
 
-            foo = CodeExecutionLogic.handel_docker_response(result)
+            # foo = CodeExecutionLogic.handel_docker_response(result)
 
             if result.get("test_results").get("passed") == result.get("test_results").get("total"):
                 return implementations

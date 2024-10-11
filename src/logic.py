@@ -8,7 +8,7 @@ class CodeExecutionLogic:
     @staticmethod
     def get_supported_languages():
         return [
-            "Python",
+            "python",
         ]
 
     @staticmethod
@@ -49,7 +49,7 @@ class CodeExecutionLogic:
     async def execute_testcases(testcases: str, lang: str, version: str):
 
         # check if lang and version are supported
-        if lang.lower() not in CodeExecutionLogic.get_supported_languages():
+        if lang not in CodeExecutionLogic.get_supported_languages():
             return {"error": "Language not supported"}
         if version not in CodeExecutionLogic.get_language_versions(lang)["versions"]:
             return {"error": "Version not supported"}

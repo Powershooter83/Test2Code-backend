@@ -33,4 +33,5 @@ class CodeGenerator:
                                             " ErrorMessage: " + error_message}
             ]
         )
-        return completion.choices[0].message.content
+        parsed_result = json.loads(completion.choices[0].message.content)
+        return parsed_result

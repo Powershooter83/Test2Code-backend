@@ -9,10 +9,15 @@ import io
 from abc import ABC, abstractmethod
 from typing import Dict, Any
 
+from docker.errors import DockerException
+
 
 class ContainerService(ABC):
     def __init__(self):
-        self.docker_client = docker.from_env()
+        try:
+            self.docker_client = docker.from_env()
+        except DockerException as e:
+            raise ValueError(f"Error connecting to Docker (Docker running and configured correctly?): {str(e)}")
 
     @abstractmethod
     def get_dockerfile_content(self, filename: str) -> str:

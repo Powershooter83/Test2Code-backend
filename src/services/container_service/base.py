@@ -1,3 +1,5 @@
+# base.py
+
 import docker
 import tempfile
 import os
@@ -13,11 +15,14 @@ from docker.errors import DockerException
 
 
 class ContainerService(ABC):
-    def __init__(self):
+    def __init__(self, version: str = None):
+        self.version = version
         try:
             self.docker_client = docker.from_env()
         except DockerException as e:
-            raise ValueError(f"Error connecting to Docker (Docker running and configured correctly?): {str(e)}")
+            raise ValueError(
+                f"Error connecting to Docker (Docker running and configured correctly?): {str(e)}"
+            )
 
     @abstractmethod
     def get_dockerfile_content(self, filename: str) -> str:
@@ -42,17 +47,19 @@ class ContainerService(ABC):
                     "duration": test["call"]["duration"],
                     "setup": test["setup"],
                     "call": test["call"],
-                    "teardown": test["teardown"]
+                    "teardown": test["teardown"],
                 }
                 for test in data["tests"]
-            ]
+            ],
         }
 
     def run_code_in_container(self, code: str, test_code: str) -> Dict[str, Any]:
         try:
             with tempfile.TemporaryDirectory() as temp_dir:
                 unique_filename = f"code_{uuid.uuid4().hex}"
-                file_path = os.path.join(temp_dir, f"{unique_filename}.{self.get_file_extension()}")
+                file_path = os.path.join(
+                    temp_dir, f"{unique_filename}.{self.get_file_extension()}"
+                )
 
                 with open(file_path, "w") as file:
                     file.write(code)
@@ -67,14 +74,16 @@ class ContainerService(ABC):
                     dockerfile.write(dockerfile_content)
 
                 build_start_time = time.time()
-                image, _ = self.docker_client.images.build(path=temp_dir, tag="code_test_image")
+                image, _ = self.docker_client.images.build(
+                    path=temp_dir, tag="code_test_image"
+                )
                 build_time = (time.time() - build_start_time) * 1000
 
                 run_start_time = time.time()
                 container = self.docker_client.containers.run(
                     image="code_test_image",
                     command=self.get_run_command(unique_filename),
-                    detach=True
+                    detach=True,
                 )
                 container.wait()
                 run_time = (time.time() - run_start_time) * 1000
@@ -87,8 +96,8 @@ class ContainerService(ABC):
                 tar_stream.seek(0)
 
                 with tarfile.open(fileobj=tar_stream) as tar:
-                    json_file = tar.extractfile('test_results.json')
-                    json_content = json_file.read().decode('utf-8')
+                    json_file = tar.extractfile("test_results.json")
+                    json_content = json_file.read().decode("utf-8")
 
                 test_results = self.parse_test_results(json_content)
 
@@ -99,7 +108,7 @@ class ContainerService(ABC):
                     "test_results": test_results,
                     "build_time": build_time,
                     "run_time": run_time,
-                    "total_time": build_time + run_time
+                    "total_time": build_time + run_time,
                 }
         except Exception as e:
             return {"error": str(e)}

@@ -1,23 +1,25 @@
+# logic.py
+
 import os
-
-from starlette.config import undefined
-
-from services.container_service import get_container_service
+from services.container_service.factory import (
+    get_container_service,
+    get_supported_languages,
+    get_language_versions,
+)
 from services.llm_service.llm_service import CodeGenerator
-
 
 class CodeExecutionLogic:
     @staticmethod
     def get_supported_languages():
-        return [
-            "Python",
-        ]
+        return get_supported_languages()
 
     @staticmethod
     def get_language_versions(lang: str):
-        if lang.lower() == "python":
-            return {"language": lang, "versions": ["3.11"]}
-        return {"error": "Language not found"}
+        versions = get_language_versions(lang)
+        if versions:
+            return {"language": lang, "versions": versions}
+        else:
+            return {"error": "Language not found"}
 
     @staticmethod
     def parse_testcase_and_implementation(jsonObject: object):
@@ -35,8 +37,8 @@ class CodeExecutionLogic:
                                         errorMessage: str):
 
         responseObject = code_generator.revise_implementation(testcases,
-                                                            implementations,
-                                                            errorMessage)
+                                                              implementations,
+                                                              errorMessage)
         return responseObject
 
     @staticmethod
@@ -51,62 +53,13 @@ class CodeExecutionLogic:
 
         return failed_message
 
-
-    # async def execute_testcases2(self, testcases: str, lang: str, version: str):
-    #
-    #     # check if lang and version are supported
-    #     if lang not in CodeExecutionLogic.get_supported_languages():
-    #         return {"error": "Language not supported"}
-    #     if version not in CodeExecutionLogic.get_language_versions(lang)["versions"]:
-    #         return {"error": "Version not supported"}
-    #
-    #     try:
-    #         openai_api_key = os.getenv("OPENAI_API_KEY")
-    #
-    #         code_generator = CodeGenerator(openai_api_key)
-    #
-    #         llm_response_obj = code_generator.generate_implementation(testcases)
-    #
-    #         testcases, implementations = CodeExecutionLogic.parse_testcase_and_implementation(llm_response_obj)
-    #
-    #         for tries in range(3):
-    #             error = llm_response_obj["error"]
-    #             if error["type"] != "":
-    #                 if error["source"] in ["implementation", "docker"]:
-    #                     llm_response_obj = CodeExecutionLogic.retry_generating_implementation(code_generator,
-    #                                                                                 testcases,
-    #                                                                                 implementations,
-    #                                                                                 error["message"])
-    #
-    #
-    #             testcases, implementations = CodeExecutionLogic.parse_testcase_and_implementation(llm_response_obj)
-    #             service = get_container_service(lang)
-    #
-    #             result = service.run_code_in_container(implementations, testcases)
-    #
-    #             if result.get("test_results").get("passed") == result.get("test_results").get("total"):
-    #                 return llm_response_obj
-    #             else:
-    #                 llm_response_obj["error"]["message"] = result.get("test_results").
-    #                 llm_response_obj["error"]["type"] = "failedDockerCheck"
-    #                 llm_response_obj["error"]["source"] = "docker"
-    #
-    #
-    #         llm_response_obj["error"]["message"] = "Failed to generated a method"
-    #         return llm_response_obj
-    #
-    #     except ValueError as e:
-    #         return {"error": str(e)}
-    #     except Exception as e:
-    #         return {"error": f"An unexpected error occurred: {str(e)}"}
-    #
-
-    async def execute_testcases(testcases: str, lang: str, version: str):
-
-        # check if lang and version are supported
-        if lang not in CodeExecutionLogic.get_supported_languages():
+    @classmethod
+    async def execute_testcases(cls, testcases: str, language: str, version: str):
+        language = language.lower()
+        # Check if language and version are supported
+        if language not in cls.get_supported_languages():
             return {"error": "Language not supported"}
-        if version not in CodeExecutionLogic.get_language_versions(lang)["versions"]:
+        if version not in cls.get_language_versions(language)["versions"]:
             return {"error": "Version not supported"}
 
         try:
@@ -116,28 +69,31 @@ class CodeExecutionLogic:
 
             llm_response_obj = code_generator.generate_implementation(testcases)
 
-            testcases, implementations = CodeExecutionLogic.parse_testcase_and_implementation(llm_response_obj)
+            testcases_str, implementations = cls.parse_testcase_and_implementation(llm_response_obj)
 
             for tries in range(4):
                 if llm_response_obj["error"]["type"] == "":
-                    service = get_container_service(lang)
-                    result = service.run_code_in_container(implementations, testcases)
+                    service = get_container_service(language, version)
+                    result = service.run_code_in_container(implementations, testcases_str)
 
-                    if result.get("test_results").get("passed") == result.get("test_results").get("total"):
+                    if result.get("test_results").get("summary").get("passed") == result.get("test_results").get("summary").get("total"):
                         return llm_response_obj
                     else:
-                        llm_response_obj["error"]["message"] = self.check_for_failing_tests(result)
+                        error_message = cls.check_for_failing_tests(result)
+                        llm_response_obj["error"]["message"] = error_message
                         llm_response_obj["error"]["type"] = "failedDockerCheck"
                         llm_response_obj["error"]["source"] = "docker"
 
                 if llm_response_obj["error"]["source"] in ["implementation", "docker"]:
-                    llm_response_obj = code_generator.revise_implementation(testcases,
-                                                                          implementations,
-                                                                          llm_response_obj["error"]["message"])
+                    llm_response_obj = code_generator.revise_implementation(
+                        testcases_str,
+                        implementations,
+                        llm_response_obj["error"]["message"]
+                    )
 
-                testcases, implementations = CodeExecutionLogic.parse_testcase_and_implementation(llm_response_obj)
+                testcases_str, implementations = cls.parse_testcase_and_implementation(llm_response_obj)
 
-            return  llm_response_obj
+            return llm_response_obj
 
         except ValueError as e:
             return {"error": str(e)}

@@ -1,17 +1,37 @@
+# python_service.py
+
 import re
 import ast
 from typing import Dict, Any, Tuple
 from .base import ContainerService
 
 class PythonContainerService(ContainerService):
+    SUPPORTED_VERSIONS = ["3.6", "3.7", "3.8", "3.9", "3.10", "3.11"]
+
+    def __init__(self, version: str = "3.11"):
+        super().__init__(version)
+        if not self.version:
+            self.version = "3.11"  # default to 3.11 if version is None
+
+        if self.version not in self.SUPPORTED_VERSIONS:
+            raise ValueError(
+                f"Unsupported Python version: {self.version}. Supported versions are: {', '.join(self.SUPPORTED_VERSIONS)}"
+            )
+
+    @classmethod
+    def get_supported_versions(cls):
+        return cls.SUPPORTED_VERSIONS
+
     def get_dockerfile_content(self, filename: str) -> str:
         """
         Get the content of the Dockerfile for Python code
         :param filename: Filename of the Python file
         :return: Content of the Dockerfile
         """
+        python_version = self.version
+
         return f"""
-        FROM python:3.11
+        FROM python:{python_version}
         WORKDIR /app
         COPY {filename}.py /app/{filename}.py
         RUN pip install pytest pytest-json-report

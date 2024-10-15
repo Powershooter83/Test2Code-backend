@@ -1,3 +1,5 @@
+# java_service.py
+
 import io
 import os
 import shutil
@@ -13,12 +15,15 @@ from .base import ContainerService
 class JavaContainerService(ContainerService):
     SUPPORTED_VERSIONS = ["11", "17"]
 
-    def __init__(self, version: str = "11"):
-        super().__init__(version)
+    def __init__(self, version: str = "11", logger=None):
+        super().__init__(version, logger)
         if not self.version:
             self.version = "11"  # default to 11 if version is None
 
         if self.version not in self.SUPPORTED_VERSIONS:
+            self.logger.error(
+                f"Unsupported Java version: {self.version}. Supported versions are: {', '.join(self.SUPPORTED_VERSIONS)}"
+            )
             raise ValueError(
                 f"Unsupported Java version: {self.version}. Supported versions are: {', '.join(self.SUPPORTED_VERSIONS)}"
             )

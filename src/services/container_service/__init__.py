@@ -1,3 +1,5 @@
+# __init__.py
+
 from .base import ContainerService
 from .factory import get_container_service
 from .java_service import JavaContainerService

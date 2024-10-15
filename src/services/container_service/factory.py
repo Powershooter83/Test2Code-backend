@@ -10,18 +10,16 @@ SERVICE_CLASSES = {
     # Add more languages here in the future
 }
 
-
-def get_container_service(language: str, version: str) -> ContainerService:
+def get_container_service(language: str, version: str, logger) -> ContainerService:
     service_class = SERVICE_CLASSES.get(language.lower())
     if service_class:
-        return service_class(version)
+        return service_class(version, logger)
     else:
+        logger.error(f"Unsupported language: {language}")
         raise ValueError(f"Unsupported language: {language}")
-
 
 def get_supported_languages():
     return list(SERVICE_CLASSES.keys())
-
 
 def get_language_versions(language: str):
     service_class = SERVICE_CLASSES.get(language.lower())

@@ -5,15 +5,20 @@ import ast
 from typing import Dict, Any, Tuple
 from .base import ContainerService
 
+import logging
+
 class PythonContainerService(ContainerService):
     SUPPORTED_VERSIONS = ["3.6", "3.7", "3.8", "3.9", "3.10", "3.11"]
 
-    def __init__(self, version: str = "3.11"):
-        super().__init__(version)
+    def __init__(self, version: str = "3.11", logger=None):
+        super().__init__(version, logger)
         if not self.version:
-            self.version = "3.11"  # default to 3.11 if version is None
+            self.version = "3.11"
 
         if self.version not in self.SUPPORTED_VERSIONS:
+            self.logger.error(
+                f"Unsupported Python version: {self.version}. Supported versions are: {', '.join(self.SUPPORTED_VERSIONS)}"
+            )
             raise ValueError(
                 f"Unsupported Python version: {self.version}. Supported versions are: {', '.join(self.SUPPORTED_VERSIONS)}"
             )
@@ -84,21 +89,18 @@ class PythonContainerService(ContainerService):
         return True, ""
 
     def run_code_in_container(self, code: str, test_code: str) -> Dict[str, Any]:
-        """
-        Run Python code in a Docker container
-        :param code: Python code
-        :param test_code: Python test code
-        :return: Dictionary containing test results, build time, run time, and total time
-        """
+        logging.info("Running code in Python container")
         # Validate main code
         is_valid, error_msg = self.validate_code(code)
         if not is_valid:
+            logging.error(f"Invalid main code. {error_msg}")
             return {"error": f"Invalid main code. {error_msg}"}
 
         # Validate test code if provided
         if test_code:
             is_valid, error_msg = self.validate_test_code(test_code)
             if not is_valid:
+                logging.error(f"Invalid test code. {error_msg}")
                 return {"error": f"Invalid test code. {error_msg}"}
 
         return super().run_code_in_container(code, test_code)

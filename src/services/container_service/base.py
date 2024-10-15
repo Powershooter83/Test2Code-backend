@@ -11,15 +11,18 @@ import io
 from abc import ABC, abstractmethod
 from typing import Dict, Any
 
+import logging
 from docker.errors import DockerException
 
 
 class ContainerService(ABC):
-    def __init__(self, version: str = None):
+    def __init__(self, version: str = None, logger=None):
         self.version = version
+        self.logger = logger or logging.getLogger(__name__)
         try:
             self.docker_client = docker.from_env()
         except DockerException as e:
+            self.logger.error(f"Error connecting to Docker: {str(e)}")
             raise ValueError(
                 f"Error connecting to Docker (Docker running and configured correctly?): {str(e)}"
             )
@@ -54,6 +57,7 @@ class ContainerService(ABC):
         }
 
     def run_code_in_container(self, code: str, test_code: str) -> Dict[str, Any]:
+        self.logger.info(f"Running code in container, code length: {len(code)}, test_code length: {len(test_code)}")
         try:
             with tempfile.TemporaryDirectory() as temp_dir:
                 unique_filename = f"code_{uuid.uuid4().hex}"
@@ -104,6 +108,7 @@ class ContainerService(ABC):
                 container.remove()
                 self.docker_client.images.remove(image.id, force=True)
 
+                self.logger.info("Successfully ran code in container")
                 return {
                     "test_results": test_results,
                     "build_time": build_time,
@@ -111,4 +116,5 @@ class ContainerService(ABC):
                     "total_time": build_time + run_time,
                 }
         except Exception as e:
+            self.logger.error(f"Error running code in container: {str(e)}")
             return {"error": str(e)}

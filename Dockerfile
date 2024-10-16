@@ -11,8 +11,11 @@ COPY requirements.txt .
 # Install dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy only the 'src' directory contents into the container's /app directory
+# Copy the src directory contents into the container's /app directory
 COPY src/ .
+
+# Create the logs directory
+RUN mkdir -p /app/logs
 
 # Expose the port FastAPI will run on
 EXPOSE 8000

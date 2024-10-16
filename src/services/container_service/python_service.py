@@ -89,18 +89,18 @@ class PythonContainerService(ContainerService):
         return True, ""
 
     def run_code_in_container(self, code: str, test_code: str) -> Dict[str, Any]:
-        logging.info("Running code in Python container")
+        self.logger.info("Running code in Python container")
         # Validate main code
         is_valid, error_msg = self.validate_code(code)
         if not is_valid:
-            logging.error(f"Invalid main code. {error_msg}")
+            self.logger.error(f"Invalid main code. {error_msg}")
             return {"error": f"Invalid main code. {error_msg}"}
 
         # Validate test code if provided
         if test_code:
             is_valid, error_msg = self.validate_test_code(test_code)
             if not is_valid:
-                logging.error(f"Invalid test code. {error_msg}")
+                self.logger.error(f"Invalid test code. {error_msg}")
                 return {"error": f"Invalid test code. {error_msg}"}
 
         return super().run_code_in_container(code, test_code)
